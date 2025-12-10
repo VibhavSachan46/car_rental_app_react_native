@@ -10,7 +10,9 @@ const Dates = () => {
   const [dropDateShow, setdropDateShow] = useState(false);
 
 
+  function handleContinue() {
 
+  }
 
   return (
     <View style={styles.container}>
@@ -69,7 +71,7 @@ const Dates = () => {
       </View>
 
       <View style={styles.bottomContainer}>
-        <TouchableOpacity style={styles.continueBtn}>
+        <TouchableOpacity style={styles.continueBtn} onPress={handleContinue}>
           <Text style={styles.continueText}>Continue</Text>
         </TouchableOpacity>
       </View>

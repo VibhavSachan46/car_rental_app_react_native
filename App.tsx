@@ -4,13 +4,15 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { NavigationContainer } from '@react-navigation/native'
 import DashboardTabs from './src/navigation/DashboardTabs'
 import Toast from 'react-native-toast-message'
-
+import Dates from './src/screens/Dates'
+import { Provider } from 'react-redux'
+import store from './src/store/store'
 
 const Stack = createNativeStackNavigator()
 
 const App = () => {
   return (
-    <>
+    <Provider store={store}>
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
 
@@ -24,11 +26,16 @@ const App = () => {
             component={DashboardTabs}
           />
 
+          <Stack.Screen
+            name="Dates"
+            component={Dates}
+          />
+
         </Stack.Navigator>
       </NavigationContainer>
 
       <Toast />
-    </>
+    </Provider>
   )
 }
 

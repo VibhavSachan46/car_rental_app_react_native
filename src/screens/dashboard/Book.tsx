@@ -1,18 +1,34 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import React from 'react';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
 import MapSection from '../../components/MapSection';
+import { useDispatch } from 'react-redux';
+import { setLocation } from '../../store/slices/bookingDetails';
 
-const Book = () => {
+const Book = ({ navigation }: any) => {
+    const dispatch = useDispatch();
+    const [localLocation, setLocalLocation] = useState("");
+
+    function handleContinue() {
+        if (!localLocation) {
+            Alert.alert("Please select a location on the map");
+            return;
+        }
+        navigation.navigate("Dates");
+    }
+
     return (
         <View style={styles.container}>
-            {/* Map Section */}
             <View style={styles.mapSection}>
-                <MapSection />
+                <MapSection
+                    setLocation={(value) => {
+                        setLocalLocation(value);
+                        dispatch(setLocation(value));
+                    }}
+                />
             </View>
 
-            {/* Floating Bottom Button */}
             <View style={styles.bottomContainer}>
-                <TouchableOpacity style={styles.continueBtn}>
+                <TouchableOpacity style={styles.continueBtn} onPress={handleContinue}>
                     <Text style={styles.continueText}>Continue</Text>
                 </TouchableOpacity>
             </View>
@@ -27,11 +43,9 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: "#fff",
     },
-
     mapSection: {
         flex: 1,
     },
-
     bottomContainer: {
         width: "100%",
         paddingHorizontal: 20,
@@ -39,7 +53,6 @@ const styles = StyleSheet.create({
         position: "absolute",
         bottom: 0,
     },
-
     continueBtn: {
         width: "100%",
         backgroundColor: "#0A8F8F",
@@ -51,7 +64,6 @@ const styles = StyleSheet.create({
         shadowRadius: 6,
         elevation: 5,
     },
-
     continueText: {
         color: "white",
         fontWeight: "700",

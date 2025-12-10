@@ -1,9 +1,13 @@
 import React from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
-import MapView, { Marker, MapViewProps } from 'react-native-maps';
+import { StyleSheet, View } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 import Toast from 'react-native-toast-message';
 
-const MapSection: React.FC = () => {
+type MapSectionProps = {
+  setLocation: (location: any) => void;
+};
+
+const MapSection: React.FC<MapSectionProps> = ({ setLocation }) => {
 
   const getPlaceName = async (lat: Number, lng: Number) => {
 
@@ -15,8 +19,14 @@ const MapSection: React.FC = () => {
     // Alert.alert(data.results[0]?.formatted_address, "Unknown place");
     Toast.show({
       type: "success",
-      text1: "Hello!",
+      text1: "Selected location!",
       text2: `${data.results[0]?.formatted_address}`,
+    });
+
+    setLocation({
+      latitude: lat,
+      longitude: lng,
+      address: `${data.results[0]?.formatted_address}`,
     });
   };
 

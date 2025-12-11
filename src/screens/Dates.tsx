@@ -1,17 +1,25 @@
 import { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { setPickupDate } from "../store/slices/bookingDetails"
+import { setDropDate } from "../store/slices/bookingDetails"
+import { useDispatch } from 'react-redux';
 
-const Dates = () => {
+const Dates = ({ navigation }: any) => {
 
   const [pickupDate, setpickupDate] = useState(new Date());
   const [pickupDateShow, setpickupDateShow] = useState(false);
   const [dropDate, setdropDate] = useState(new Date());
   const [dropDateShow, setdropDateShow] = useState(false);
 
+  const dispatch = useDispatch()
+
 
   function handleContinue() {
+    dispatch(setPickupDate(pickupDate.toDateString()))
+    dispatch(setDropDate(dropDate.toDateString()))
 
+    navigation.navigate("Details")
   }
 
   return (
@@ -44,7 +52,7 @@ const Dates = () => {
 
         <View style={{ gap: 12 }}>
           <TouchableOpacity onPress={() => setdropDateShow(true)}>
-            <Text>Select pickup date</Text>
+            <Text>Select drop date</Text>
           </TouchableOpacity>
           <View>
             {
@@ -84,7 +92,6 @@ export default Dates;
 const styles = StyleSheet.create({
   container: {
     height: "100%",
-
     marginTop: 40,
     paddingVertical: 40,
     paddingHorizontal: 20,

@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 
-const SplashScreen = ({ navigation }) => {
+const SplashScreen = ({ navigation }: any) => {
 
     useEffect(() => {
         const timer = setTimeout(() => {

@@ -3,7 +3,8 @@ import { createSlice } from "@reduxjs/toolkit";
 const initialState = {
     pickupDate: null,
     dropDate: null,
-    location: null,
+    pickupLocation: null,
+    dropLocation: null,
     userDetails: {
         name: "",
         phone: "",
@@ -21,11 +22,25 @@ const bookingSlice = createSlice({
         setDropDate: (state, action) => {
             state.dropDate = action.payload;
         },
-        setLocation: (state, action) => {
-            state.location = action.payload;
+        setPickupLocation: (state, action) => {
+            state.pickupLocation = action.payload;
+        },
+        setDropLocation: (state, action) => {
+            state.dropLocation = action.payload;
         },
         setUserDetails: (state, action) => {
             state.userDetails = { ...state.userDetails, ...action.payload };
+        },
+        resetBooking: (state) => {
+            state.pickupDate = null;
+            state.dropDate = null;
+            state.pickupLocation = null;
+            state.dropLocation = null;
+            state.userDetails = {
+                name: "",
+                phone: "",
+                email: "",
+            };
         },
     },
 });
@@ -33,8 +48,9 @@ const bookingSlice = createSlice({
 export const {
     setPickupDate,
     setDropDate,
-    setLocation,
-    setUserDetails,
+    setPickupLocation,
+    setDropLocation,
+    setUserDetails, resetBooking
 } = bookingSlice.actions;
 
 export default bookingSlice.reducer;

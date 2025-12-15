@@ -5,6 +5,7 @@ const initialState = {
     dropDate: null,
     pickupLocation: null,
     dropLocation: null,
+    pickupTime: null,
     userDetails: {
         name: "",
         phone: "",
@@ -31,6 +32,9 @@ const bookingSlice = createSlice({
         setUserDetails: (state, action) => {
             state.userDetails = { ...state.userDetails, ...action.payload };
         },
+        setPickupTime: (state, action) => {
+            state.pickupTime = action.payload;
+        },
         resetBooking: (state) => {
             state.pickupDate = null;
             state.dropDate = null;
@@ -50,6 +54,7 @@ export const {
     setDropDate,
     setPickupLocation,
     setDropLocation,
+    setPickupTime,
     setUserDetails, resetBooking
 } = bookingSlice.actions;
 

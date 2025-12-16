@@ -23,7 +23,6 @@ const TripDetails = ({ navigation }: any) => {
 
   const [pickupDate, setPickupDate] = useState(new Date());
   const [dropDate, setDropDate] = useState(new Date());
-
   const [pickupTime, setPickupTime] = useState(getDefaultPickupTime());
 
   const [showPickupDate, setShowPickupDate] = useState(false);
@@ -74,10 +73,10 @@ const TripDetails = ({ navigation }: any) => {
       return;
     }
 
-    const pickupDateTime = combineDateAndTime(pickupDate, pickupTime);
-    const dropDateTime = combineDateAndTime(dropDate, pickupTime);
+    const pickupDT = combineDateAndTime(pickupDate, pickupTime);
+    const dropDT = combineDateAndTime(dropDate, pickupTime);
 
-    if (dropDateTime <= pickupDateTime) {
+    if (dropDT <= pickupDT) {
       Toast.show({
         type: "error",
         text1: "Invalid dates",
@@ -85,9 +84,8 @@ const TripDetails = ({ navigation }: any) => {
       });
       return;
     }
-
-    dispatch(setPickupDateTime(pickupDateTime));
-    dispatch(setDropDateTime(dropDateTime));
+    dispatch(setPickupDateTime(pickupDT.getTime()));
+    dispatch(setDropDateTime(dropDT.getTime()));
     dispatch(setUserDetails({ name, phone, email }));
 
     navigation.navigate("Review");
@@ -118,7 +116,6 @@ const TripDetails = ({ navigation }: any) => {
               onChange={(e, selected) => {
                 setShowPickupDate(false);
                 if (e.type === "dismissed" || !selected) return;
-
                 setPickupDate(selected);
                 if (selected > dropDate) setDropDate(selected);
               }}
@@ -197,6 +194,7 @@ const TripDetails = ({ navigation }: any) => {
         </View>
       </View>
 
+      {/* User Details */}
       <View style={styles.card}>
         <Text style={styles.label}>Passenger Details</Text>
 
@@ -225,11 +223,9 @@ const TripDetails = ({ navigation }: any) => {
         />
       </View>
 
+      {/* CTA */}
       <View style={styles.bottomContainer}>
-        <TouchableOpacity
-          style={styles.continueBtn}
-          onPress={handleContinue}
-        >
+        <TouchableOpacity style={styles.continueBtn} onPress={handleContinue}>
           <Text style={styles.continueText}>Review Booking</Text>
         </TouchableOpacity>
       </View>
@@ -238,6 +234,7 @@ const TripDetails = ({ navigation }: any) => {
 };
 
 export default TripDetails;
+
 
 
 const styles = StyleSheet.create({
@@ -252,7 +249,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "700",
     color: "#0A8F8F",
-    marginBottom: 20,
   },
 
   cardContainer: {
@@ -270,6 +266,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 8,
     elevation: 5,
+    marginTop: 32,
     gap: 20,
   },
 
@@ -325,6 +322,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 5 },
     shadowRadius: 8,
     elevation: 6,
+    marginTop: 32
   },
 
   continueText: {

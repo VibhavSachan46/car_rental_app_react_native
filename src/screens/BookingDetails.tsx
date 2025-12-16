@@ -1,8 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import {
+    View,
+    Text,
+    StyleSheet,
+    ScrollView,
+    Dimensions,
+} from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
-
 import { GOOGLE_API } from "@env";
+
+const { width } = Dimensions.get("window");
 
 const BookingDetails = ({ route }: any) => {
     const { booking } = route.params;
@@ -10,11 +17,18 @@ const BookingDetails = ({ route }: any) => {
     const pickup = booking.pickupLocation;
     const drop = booking.dropLocation;
 
+    const pickupDT = booking.pickupDateTime
+        ? new Date(booking.pickupDateTime)
+        : null;
+    const dropDT = booking.dropDateTime
+        ? new Date(booking.dropDateTime)
+        : null;
+
     const [routeCoords, setRouteCoords] = useState<any[]>([]);
     const [routeDistance, setRouteDistance] = useState<number | null>(null);
 
     useEffect(() => {
-        fetchRoute();
+        if (pickup && drop) fetchRoute();
     }, []);
 
     const fetchRoute = async () => {
@@ -45,17 +59,18 @@ const BookingDetails = ({ route }: any) => {
 
     return (
         <View style={styles.container}>
+            {/* MAP */}
             <MapView
                 style={styles.map}
                 initialRegion={{
-                    latitude: pickup.latitude,
-                    longitude: pickup.longitude,
+                    latitude: pickup?.latitude || 28.61,
+                    longitude: pickup?.longitude || 77.20,
                     latitudeDelta: 0.08,
                     longitudeDelta: 0.08,
                 }}
             >
-                <Marker coordinate={pickup} title="Pickup" />
-                <Marker coordinate={drop} title="Drop" />
+                {pickup && <Marker coordinate={pickup} title="Pickup" />}
+                {drop && <Marker coordinate={drop} title="Drop" />}
 
                 {routeCoords.length > 0 && (
                     <Polyline
@@ -66,10 +81,28 @@ const BookingDetails = ({ route }: any) => {
                 )}
             </MapView>
 
-            <ScrollView style={styles.details} showsVerticalScrollIndicator={false}>
+            {/* DETAILS */}
+            <ScrollView
+                style={styles.details}
+                showsVerticalScrollIndicator={false}
+            >
                 <Text style={styles.title}>Booking Details</Text>
 
-                <Section title="Trip Info">
+                {/* SUMMARY */}
+                <Section title="Summary">
+                    <Detail label="Car" value={booking.car?.name || "Car"} />
+                    <Detail
+                        label="Total Amount"
+                        value={`₹${booking.totalAmount || 0}`}
+                    />
+                    <Detail
+                        label="Duration"
+                        value={`${booking.rentalDays || 0} day(s)`}
+                    />
+                </Section>
+
+                {/* TRIP */}
+                <Section title="Trip Information">
                     <Detail
                         label="Distance"
                         value={
@@ -78,29 +111,50 @@ const BookingDetails = ({ route }: any) => {
                                 : "Calculating..."
                         }
                     />
+
+                    <Detail
+                        label="Pickup"
+                        value={
+                            pickupDT ? pickupDT.toLocaleString() : "-"
+                        }
+                    />
+
+                    <Detail
+                        label="Drop"
+                        value={
+                            dropDT ? dropDT.toLocaleString() : "-"
+                        }
+                    />
                 </Section>
 
-                <Section title="Pickup Details">
-                    <Detail label="Location" value={pickup.address} />
-                    <Detail label="Date" value={booking.pickupDate} />
-                    <Detail label="Time">
-                        <View style={styles.timeChip}>
-                            <Text style={styles.timeText}>
-                                {booking.pickupTime}
-                            </Text>
-                        </View>
-                    </Detail>
+                {/* LOCATIONS */}
+                <Section title="Locations">
+                    <Detail
+                        label="Pickup Location"
+                        value={pickup?.address || "Unknown"}
+                    />
+                    <Detail
+                        label="Drop Location"
+                        value={drop?.address || "Unknown"}
+                    />
                 </Section>
 
-                <Section title="Drop Details">
-                    <Detail label="Location" value={drop.address} />
-                    <Detail label="Date" value={booking.dropDate} />
-                </Section>
-
+                {/* USER */}
                 <Section title="Passenger Details">
-                    <Detail label="Name" value={booking.name} />
-                    <Detail label="Email" value={booking.email} />
-                    <Detail label="Phone" value={booking.phone} />
+                    <Detail
+                        label="Name"
+                        value={booking.user?.name || "-"}
+                    />
+                    <Detail
+                        label="Phone"
+                        value={booking.user?.phone || "-"}
+                    />
+                    {booking.user?.email ? (
+                        <Detail
+                            label="Email"
+                            value={booking.user.email}
+                        />
+                    ) : null}
                 </Section>
 
                 <View style={{ height: 30 }} />
@@ -109,8 +163,10 @@ const BookingDetails = ({ route }: any) => {
     );
 };
 
+/* -------------------- HELPERS -------------------- */
+
 const decodePolyline = (encoded: string) => {
-    let poly = [];
+    let poly: any[] = [];
     let index = 0,
         lat = 0,
         lng = 0;
@@ -145,6 +201,8 @@ const decodePolyline = (encoded: string) => {
     return poly;
 };
 
+/* -------------------- UI HELPERS -------------------- */
+
 const Section = ({ title, children }: any) => (
     <View style={styles.sectionBox}>
         <Text style={styles.sectionTitle}>{title}</Text>
@@ -152,40 +210,42 @@ const Section = ({ title, children }: any) => (
     </View>
 );
 
-const Detail = ({ label, value, children }: any) => (
-    <View style={{ marginBottom: 14 }}>
+const Detail = ({ label, value }: any) => (
+    <View style={styles.detailRow}>
         <Text style={styles.label}>{label}</Text>
-        {value && <Text style={styles.value}>{value}</Text>}
-        {children}
+        <Text style={styles.value}>{value}</Text>
     </View>
 );
 
-export default BookingDetails;
-
+/* -------------------- STYLES -------------------- */
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: "#F6F7F9",
     },
+
     map: {
         width: "100%",
         height: 280,
     },
+
     details: {
         flex: 1,
         padding: 16,
     },
+
     title: {
         fontSize: 22,
         fontWeight: "800",
         marginBottom: 16,
         color: "#0A8F8F",
     },
+
     sectionBox: {
         backgroundColor: "#fff",
         padding: 16,
-        borderRadius: 14,
+        borderRadius: 16,
         marginBottom: 16,
         shadowColor: "#000",
         shadowOpacity: 0.06,
@@ -193,34 +253,30 @@ const styles = StyleSheet.create({
         shadowRadius: 6,
         elevation: 3,
     },
+
     sectionTitle: {
         fontSize: 17,
         fontWeight: "700",
         marginBottom: 12,
         color: "#333",
     },
+
+    detailRow: {
+        marginBottom: 12,
+    },
+
     label: {
         fontSize: 13,
         color: "#777",
         fontWeight: "600",
     },
+
     value: {
         fontSize: 16,
         color: "#222",
         fontWeight: "500",
         marginTop: 2,
     },
-    timeChip: {
-        backgroundColor: "#0A8F8F22",
-        paddingVertical: 6,
-        paddingHorizontal: 14,
-        borderRadius: 20,
-        alignSelf: "flex-start",
-        marginTop: 4,
-    },
-    timeText: {
-        color: "#0A8F8F",
-        fontSize: 15,
-        fontWeight: "700",
-    },
 });
+
+export default BookingDetails;

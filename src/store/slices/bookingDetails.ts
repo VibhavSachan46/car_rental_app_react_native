@@ -1,18 +1,23 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
+    // Locations
     pickupLocation: null,
     dropLocation: null,
+
     pickupDateTime: null,
     dropDateTime: null,
+
+    // Selected car
+    carDetails: {
+        carId: null,
+    },
+
+    // User details
     userDetails: {
         name: "",
         phone: "",
         email: "",
-    },
-    carDetails: {
-        category: "",
-        pricePerDay: 0,
     },
     pricing: {
         rentalDays: 0,
@@ -32,7 +37,7 @@ const bookingSlice = createSlice({
             state.dropLocation = action.payload;
         },
 
-        // Date & time
+        // Date + Time (TIMESTAMPS ONLY)
         setPickupDateTime: (state, action) => {
             state.pickupDateTime = action.payload;
         },
@@ -41,8 +46,8 @@ const bookingSlice = createSlice({
         },
 
         // Car
-        setCarDetails: (state, action) => {
-            state.carDetails = action.payload;
+        setCarId: (state, action) => {
+            state.carDetails.carId = action.payload;
         },
 
         // User
@@ -53,10 +58,12 @@ const bookingSlice = createSlice({
             };
         },
 
+        // Pricing
         setPricing: (state, action) => {
             state.pricing = action.payload;
         },
 
+        // Reset
         resetBooking: () => initialState,
     },
 });
@@ -66,7 +73,7 @@ export const {
     setDropLocation,
     setPickupDateTime,
     setDropDateTime,
-    setCarDetails,
+    setCarId,
     setUserDetails,
     setPricing,
     resetBooking,

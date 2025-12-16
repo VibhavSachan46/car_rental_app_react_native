@@ -15,13 +15,9 @@ import { useFocusEffect } from "@react-navigation/native";
 
 type Booking = {
     id: string;
-    name: string;
-    phone: string;
-    email: string;
 
-    pickupDate: string;
-    pickupTime: string;
-    dropDate: string;
+    pickupDateTime: number;
+    dropDateTime: number;
 
     pickupLocation: {
         latitude: number;
@@ -34,6 +30,23 @@ type Booking = {
         longitude: number;
         address: string;
     } | null;
+
+    car: {
+        id: string;
+        name?: string;
+        pricePerDay: number;
+    };
+
+    user: {
+        name: string;
+        phone: string;
+        email?: string;
+    };
+
+    rentalDays: number;
+    totalAmount: number;
+
+    status: "UPCOMING" | "COMPLETED";
 };
 
 const Bookings = ({ navigation }: any) => {
@@ -53,14 +66,6 @@ const Bookings = ({ navigation }: any) => {
         loadBookings();
     }, []);
 
-    const getPickupDateTime = (b: Booking) => {
-        if (!b.pickupDate || !b.pickupTime) return null;
-        const [h, m] = b.pickupTime.split(":").map(Number);
-        const d = new Date(b.pickupDate);
-        d.setHours(h, m, 0, 0);
-        return isNaN(d.getTime()) ? null : d;
-    };
-
     const loadBookings = () => {
         const json = getItem("bookings");
         if (!json) return;
@@ -73,37 +78,45 @@ const Bookings = ({ navigation }: any) => {
         const p: Booking[] = [];
 
         const now = new Date();
-        const startOfToday = new Date(now.setHours(0, 0, 0, 0));
+
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+
         const startOfTomorrow = new Date(startOfToday);
         startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
+
         const startOfDayAfterTomorrow = new Date(startOfTomorrow);
         startOfDayAfterTomorrow.setDate(startOfDayAfterTomorrow.getDate() + 1);
 
         all.forEach((b) => {
-            const pickup = getPickupDateTime(b);
-            if (!pickup) return p.push(b);
-            if (pickup < new Date()) p.push(b);
-            else if (pickup < startOfTomorrow) t.push(b);
-            else if (pickup < startOfDayAfterTomorrow) tm.push(b);
-            else l.push(b);
+            const pickup = new Date(b.pickupDateTime);
+
+            if (pickup < now) {
+                p.push({ ...b, status: "COMPLETED" });
+            } else if (pickup < startOfTomorrow) {
+                t.push(b);
+            } else if (pickup < startOfDayAfterTomorrow) {
+                tm.push(b);
+            } else {
+                l.push(b);
+            }
         });
 
-        const sort = (a: Booking, b: Booking) =>
-            getPickupDateTime(a)!.getTime() - getPickupDateTime(b)!.getTime();
+        const sortByPickup = (a: Booking, b: Booking) =>
+            a.pickupDateTime - b.pickupDateTime;
 
-        setToday(t.sort(sort));
-        setTomorrow(tm.sort(sort));
-        setLater(l.sort(sort));
-        setPast(p);
+        setToday(t.sort(sortByPickup));
+        setTomorrow(tm.sort(sortByPickup));
+        setLater(l.sort(sortByPickup));
+        setPast(p.sort(sortByPickup));
     };
 
-    const getStatus = (b: Booking) =>
-        getPickupDateTime(b)?.getTime()! >= Date.now()
-            ? "Upcoming"
-            : "Completed";
 
     const renderCard = (item: Booking) => {
-        const status = getStatus(item);
+        const pickupDT = new Date(item.pickupDateTime);
+        const dropDT = new Date(item.dropDateTime);
+
+        const status = item.status;
 
         return (
             <TouchableOpacity
@@ -117,20 +130,21 @@ const Bookings = ({ navigation }: any) => {
                 <View
                     style={[
                         styles.accentBar,
-                        status === "Upcoming"
+                        status === "UPCOMING"
                             ? styles.accentUpcoming
                             : styles.accentPast,
                     ]}
                 />
 
                 <View style={styles.cardContent}>
+                    {/* Header */}
                     <View style={styles.cardHeader}>
                         <Text style={styles.bookingId}>#{item.id}</Text>
 
                         <View
                             style={[
                                 styles.statusBadge,
-                                status === "Upcoming"
+                                status === "UPCOMING"
                                     ? styles.statusUpcoming
                                     : styles.statusPast,
                             ]}
@@ -138,15 +152,20 @@ const Bookings = ({ navigation }: any) => {
                             <Text
                                 style={[
                                     styles.statusText,
-                                    status === "Upcoming"
+                                    status === "UPCOMING"
                                         ? styles.statusTextUpcoming
                                         : styles.statusTextPast,
                                 ]}
                             >
-                                {status}
+                                {status === "UPCOMING" ? "Upcoming" : "Completed"}
                             </Text>
                         </View>
                     </View>
+
+                    {/* Car */}
+                    <Text style={styles.carText}>
+                        🚗 {item.car.name} · ₹{item.totalAmount}
+                    </Text>
 
                     {/* Pickup Address */}
                     <Text style={styles.pickupAddress} numberOfLines={1}>
@@ -160,13 +179,15 @@ const Bookings = ({ navigation }: any) => {
                         <View style={styles.dateChip}>
                             <Text style={styles.chipLabel}>Pickup</Text>
                             <Text style={styles.chipValue}>
-                                {item.pickupDate} {item.pickupTime}
+                                {pickupDT.toLocaleString()}
                             </Text>
                         </View>
 
                         <View style={styles.dateChip}>
                             <Text style={styles.chipLabel}>Drop</Text>
-                            <Text style={styles.chipValue}>{item.dropDate}</Text>
+                            <Text style={styles.chipValue}>
+                                {dropDT.toLocaleDateString()}
+                            </Text>
                         </View>
                     </View>
                 </View>
@@ -183,6 +204,8 @@ const Bookings = ({ navigation }: any) => {
                 {data.map(renderCard)}
             </>
         );
+
+    /* -------------------- UI -------------------- */
 
     return (
         <ScrollView style={{ backgroundColor: "#F6F7F9" }}>
@@ -205,6 +228,7 @@ const Bookings = ({ navigation }: any) => {
 };
 
 export default Bookings;
+
 
 
 const styles = StyleSheet.create({
@@ -340,9 +364,12 @@ const styles = StyleSheet.create({
     },
 
     chipValue: {
-        fontSize: 14,
+        fontSize: 12,
         fontWeight: "700",
         color: "#222",
         marginTop: 2,
     },
+    carText: {
+        fontSize: 16
+    }
 });

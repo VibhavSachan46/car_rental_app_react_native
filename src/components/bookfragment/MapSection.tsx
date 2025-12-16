@@ -4,7 +4,6 @@ import {
   Platform,
   StyleSheet,
   View,
-
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import Geolocation from "react-native-geolocation-service";
@@ -145,19 +144,6 @@ const MapSection: React.FC<MapSectionProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* <View style={styles.sliderContainer}>
-        <Slider
-          style={styles.slider}
-          minimumValue={1}
-          maximumValue={10}
-          step={1}
-          value={value}
-          minimumTrackTintColor="#0A8F8F"
-          thumbTintColor="#0A8F8F"
-          onValueChange={(val) => setValue(val)}
-        />
-        <Text style={styles.sliderValue}>{value} km</Text>
-      </View> */}
 
       {showList && nearbyMarkers.length > 0 && (
         <NearbyList places={nearbyMarkers} onSelect={handleSelectPlace} />

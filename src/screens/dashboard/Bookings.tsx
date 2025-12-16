@@ -5,9 +5,12 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { getItem } from "../../storage/mmkv";
-import { showUpcomingBookingReminder, cleanupOldReminders } from "../../services/bookingReminder";
+import {
+    showUpcomingBookingReminder,
+    cleanupOldReminders,
+} from "../../services/bookingReminder";
 import { useFocusEffect } from "@react-navigation/native";
 
 type Booking = {
@@ -34,23 +37,15 @@ type Booking = {
 };
 
 const Bookings = ({ navigation }: any) => {
-    const [upcoming, setUpcoming] = useState<Booking[]>([]);
+    const [today, setToday] = useState<Booking[]>([]);
+    const [tomorrow, setTomorrow] = useState<Booking[]>([]);
+    const [later, setLater] = useState<Booking[]>([]);
     const [past, setPast] = useState<Booking[]>([]);
 
-    // This runs every time the screen comes into focus
     useFocusEffect(
-        React.useCallback(() => {
-            console.log("Bookings screen focused - showing notification");
+        useCallback(() => {
             cleanupOldReminders();
-
-            // Small delay to ensure smooth transition
-            setTimeout(() => {
-                showUpcomingBookingReminder();
-            }, 300);
-
-            return () => {
-                // Cleanup function (optional)
-            };
+            setTimeout(showUpcomingBookingReminder, 300);
         }, [])
     );
 
@@ -58,119 +53,152 @@ const Bookings = ({ navigation }: any) => {
         loadBookings();
     }, []);
 
+    const getPickupDateTime = (b: Booking) => {
+        if (!b.pickupDate || !b.pickupTime) return null;
+        const [h, m] = b.pickupTime.split(":").map(Number);
+        const d = new Date(b.pickupDate);
+        d.setHours(h, m, 0, 0);
+        return isNaN(d.getTime()) ? null : d;
+    };
+
     const loadBookings = () => {
         const json = getItem("bookings");
         if (!json) return;
 
-        const allBookings: Booking[] = JSON.parse(json);
-        const now = Date.now();
+        const all: Booking[] = JSON.parse(json);
 
-        const upcomingList: Booking[] = [];
-        const pastList: Booking[] = [];
+        const t: Booking[] = [];
+        const tm: Booking[] = [];
+        const l: Booking[] = [];
+        const p: Booking[] = [];
 
-        allBookings.forEach((b) => {
-            if (!b.pickupDate || !b.pickupTime) {
-                pastList.push(b);
-                return;
-            }
+        const now = new Date();
+        const startOfToday = new Date(now.setHours(0, 0, 0, 0));
+        const startOfTomorrow = new Date(startOfToday);
+        startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
+        const startOfDayAfterTomorrow = new Date(startOfTomorrow);
+        startOfDayAfterTomorrow.setDate(startOfDayAfterTomorrow.getDate() + 1);
 
-            try {
-                const [hours, minutes] = b.pickupTime.split(':').map(Number);
-
-                const pickupDateTime = new Date(b.pickupDate);
-
-                pickupDateTime.setHours(hours, minutes, 0, 0);
-
-                if (isNaN(pickupDateTime.getTime())) {
-                    pastList.push(b);
-                    return;
-                }
-
-                if (pickupDateTime.getTime() >= now) {
-                    upcomingList.push(b);
-                } else {
-                    pastList.push(b);
-                }
-            } catch (error) {
-                console.log(error);
-
-                pastList.push(b);
-            }
+        all.forEach((b) => {
+            const pickup = getPickupDateTime(b);
+            if (!pickup) return p.push(b);
+            if (pickup < new Date()) p.push(b);
+            else if (pickup < startOfTomorrow) t.push(b);
+            else if (pickup < startOfDayAfterTomorrow) tm.push(b);
+            else l.push(b);
         });
 
-        upcomingList.sort((a, b) => {
-            const [aHours, aMinutes] = a.pickupTime.split(':').map(Number);
-            const [bHours, bMinutes] = b.pickupTime.split(':').map(Number);
+        const sort = (a: Booking, b: Booking) =>
+            getPickupDateTime(a)!.getTime() - getPickupDateTime(b)!.getTime();
 
-            const aTime = new Date(a.pickupDate);
-            aTime.setHours(aHours, aMinutes, 0, 0);
-
-            const bTime = new Date(b.pickupDate);
-            bTime.setHours(bHours, bMinutes, 0, 0);
-
-            return aTime.getTime() - bTime.getTime();
-        });
-
-        setUpcoming(upcomingList);
-        setPast(pastList);
+        setToday(t.sort(sort));
+        setTomorrow(tm.sort(sort));
+        setLater(l.sort(sort));
+        setPast(p);
     };
 
-    const renderCard = (item: Booking) => (
-        <TouchableOpacity
-            key={item.id}
-            style={styles.card}
-            onPress={() =>
-                navigation.navigate("BookingDetails", { booking: item })
-            }
-        >
-            <Text style={styles.bookingId}>#{item.id}</Text>
+    const getStatus = (b: Booking) =>
+        getPickupDateTime(b)?.getTime()! >= Date.now()
+            ? "Upcoming"
+            : "Completed";
 
-            <View style={styles.section}>
-                <Text style={styles.label}>Pickup: </Text>
-                <Text style={styles.value}>
-                    {item.pickupLocation?.address
-                        ? item.pickupLocation.address.length > 10
-                            ? item.pickupLocation.address.slice(0, 10) + "..."
-                            : item.pickupLocation.address
-                        : "Unknown location"}
-                </Text>
-            </View>
+    const renderCard = (item: Booking) => {
+        const status = getStatus(item);
 
-            <View style={styles.row}>
-                <View style={styles.sectionHalf}>
-                    <Text style={styles.label}>Pickup Date</Text>
-                    <Text style={styles.value}>
-                        {item.pickupDate} {item.pickupTime}
+        return (
+            <TouchableOpacity
+                key={item.id}
+                activeOpacity={0.85}
+                style={styles.card}
+                onPress={() =>
+                    navigation.navigate("BookingDetails", { booking: item })
+                }
+            >
+                <View
+                    style={[
+                        styles.accentBar,
+                        status === "Upcoming"
+                            ? styles.accentUpcoming
+                            : styles.accentPast,
+                    ]}
+                />
+
+                <View style={styles.cardContent}>
+                    <View style={styles.cardHeader}>
+                        <Text style={styles.bookingId}>Booking #{item.id}</Text>
+
+                        <View
+                            style={[
+                                styles.statusBadge,
+                                status === "Upcoming"
+                                    ? styles.statusUpcoming
+                                    : styles.statusPast,
+                            ]}
+                        >
+                            <Text
+                                style={[
+                                    styles.statusText,
+                                    status === "Upcoming"
+                                        ? styles.statusTextUpcoming
+                                        : styles.statusTextPast,
+                                ]}
+                            >
+                                {status}
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Pickup Address */}
+                    <Text style={styles.pickupAddress} numberOfLines={1}>
+                        📍 {item.pickupLocation?.address || "Unknown location"}
                     </Text>
-                </View>
 
-                <View style={styles.sectionHalf}>
-                    <Text style={styles.label}>Drop Date</Text>
-                    <Text style={styles.value}>{item.dropDate}</Text>
+                    <View style={styles.divider} />
+
+                    {/* Dates */}
+                    <View style={styles.row}>
+                        <View style={styles.dateChip}>
+                            <Text style={styles.chipLabel}>Pickup</Text>
+                            <Text style={styles.chipValue}>
+                                {item.pickupDate} {item.pickupTime}
+                            </Text>
+                        </View>
+
+                        <View style={styles.dateChip}>
+                            <Text style={styles.chipLabel}>Drop</Text>
+                            <Text style={styles.chipValue}>{item.dropDate}</Text>
+                        </View>
+                    </View>
                 </View>
-            </View>
-        </TouchableOpacity>
-    );
+            </TouchableOpacity>
+        );
+    };
+
+    const renderSection = (title: string, data: Booking[]) =>
+        data.length > 0 && (
+            <>
+                <Text style={styles.subTitle}>
+                    {title} ({data.length})
+                </Text>
+                {data.map(renderCard)}
+            </>
+        );
 
     return (
-        <ScrollView
-            showsVerticalScrollIndicator={false}
-            style={{ backgroundColor: "#F6F7F9" }}
-        >
+        <ScrollView style={{ backgroundColor: "#F6F7F9" }}>
             <View style={styles.container}>
                 <Text style={styles.title}>Your Bookings</Text>
 
-                <Text style={styles.subTitle}>Upcoming Bookings</Text>
-                {upcoming.length === 0 && (
-                    <Text style={styles.noBookings}>No upcoming bookings</Text>
-                )}
-                {upcoming.map(renderCard)}
+                {renderSection("Today", today)}
+                {renderSection("Tomorrow", tomorrow)}
+                {renderSection("Later", later)}
 
                 <Text style={styles.subTitle}>Past Bookings</Text>
-                {past.length === 0 && (
+                {past.length === 0 ? (
                     <Text style={styles.noBookings}>No past bookings</Text>
+                ) : (
+                    past.map(renderCard)
                 )}
-                {past.map(renderCard)}
             </View>
         </ScrollView>
     );
@@ -178,57 +206,118 @@ const Bookings = ({ navigation }: any) => {
 
 export default Bookings;
 
+
 const styles = StyleSheet.create({
     container: {
         padding: 16,
-        gap: 16,
     },
 
     title: {
-        fontSize: 24,
-        fontWeight: "700",
-        paddingVertical: 8,
+        fontSize: 26,
+        fontWeight: "800",
         color: "#0A8F8F",
+        marginBottom: 12,
+    },
+
+    subTitle: {
+        fontSize: 18,
+        fontWeight: "700",
+        marginVertical: 10,
+        color: "#222",
     },
 
     noBookings: {
-        marginTop: 40,
         textAlign: "center",
+        marginTop: 30,
+        color: "#777",
         fontSize: 16,
-        color: "#666",
     },
 
     card: {
-        backgroundColor: "#fff",
+        backgroundColor: "#FFF",
+        borderRadius: 18,
         padding: 18,
-        borderRadius: 16,
-        shadowColor: "#000",
-        shadowOpacity: 0.1,
-        shadowOffset: { width: 0, height: 4 },
-        shadowRadius: 8,
+        marginBottom: 16,
         elevation: 6,
-        gap: 14,
+        shadowColor: "#000",
+        shadowOpacity: 0.08,
+        shadowOffset: { width: 0, height: 4 },
+        shadowRadius: 10,
+        position: "relative",
+    },
+
+    accentBar: {
+        position: "absolute",
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: 6,
+        borderTopLeftRadius: 18,
+        borderBottomLeftRadius: 18,
+    },
+
+    accentUpcoming: {
+        backgroundColor: "#0A8F8F",
+    },
+
+    accentPast: {
+        backgroundColor: "#CCC",
+    },
+
+    cardContent: {
+        paddingLeft: 10,
+    },
+
+    cardHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
     },
 
     bookingId: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: "700",
-        color: "#444",
+        color: "#333",
     },
 
-    bookingIdValue: {
+    statusBadge: {
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 20,
+    },
+
+    statusUpcoming: {
+        backgroundColor: "#E0F7F7",
+    },
+
+    statusPast: {
+        backgroundColor: "#EEE",
+    },
+
+    statusText: {
+        fontSize: 13,
+        fontWeight: "700",
+    },
+
+    statusTextUpcoming: {
         color: "#0A8F8F",
-        fontWeight: "700",
     },
 
-    section: {
-        gap: 4,
-        flexDirection: "row",
+    statusTextPast: {
+        color: "#666",
     },
 
-    sectionHalf: {
-        width: "48%",
-        gap: 4,
+    pickupAddress: {
+        marginTop: 10,
+        fontSize: 15,
+        fontWeight: "600",
+        color: "#111",
+    },
+
+    divider: {
+        height: 1,
+        backgroundColor: "#EEE",
+        marginVertical: 12,
     },
 
     row: {
@@ -236,20 +325,24 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
     },
 
-    label: {
-        fontSize: 14,
-        color: "#777",
-        fontWeight: "600",
+    dateChip: {
+        width: "48%",
+        backgroundColor: "#F4F6F8",
+        borderRadius: 12,
+        paddingVertical: 8,
+        paddingHorizontal: 12,
     },
 
-    value: {
-        fontSize: 15,
-        color: "#222",
-        fontWeight: "500",
+    chipLabel: {
+        fontSize: 12,
+        fontWeight: "600",
+        color: "#777",
     },
-    subTitle: {
-        fontSize: 18,
+
+    chipValue: {
+        fontSize: 14,
         fontWeight: "700",
-        paddingVertical: 8,
-    }
+        color: "#222",
+        marginTop: 2,
+    },
 });

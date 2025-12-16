@@ -109,8 +109,6 @@ const BookingDetails = ({ route }: any) => {
     );
 };
 
-/* ---------------- HELPERS ---------------- */
-
 const decodePolyline = (encoded: string) => {
     let poly = [];
     let index = 0,
@@ -147,8 +145,6 @@ const decodePolyline = (encoded: string) => {
     return poly;
 };
 
-/* ---------------- UI COMPONENTS ---------------- */
-
 const Section = ({ title, children }: any) => (
     <View style={styles.sectionBox}>
         <Text style={styles.sectionTitle}>{title}</Text>
@@ -166,7 +162,6 @@ const Detail = ({ label, value, children }: any) => (
 
 export default BookingDetails;
 
-/* ---------------- STYLES ---------------- */
 
 const styles = StyleSheet.create({
     container: {

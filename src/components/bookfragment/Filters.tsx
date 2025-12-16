@@ -5,6 +5,11 @@ import { FILTER_TABS } from '../../constants/filters'
 
 const Filters = ({ setSelectedFilter, selectedFilter }: any) => {
 
+    function handleSelect(type: any) {
+        console.log("Selected", type);
+        setSelectedFilter(type)
+    }
+
     return (
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={styles.filterTabscontainer}>
@@ -16,7 +21,7 @@ const Filters = ({ setSelectedFilter, selectedFilter }: any) => {
                                 styles.filterIcon,
                                 selectedFilter === item.type && styles.activeFilter
                             ]}
-                            onPress={() => setSelectedFilter(item.type)}
+                            onPress={() => handleSelect(item.type)}
                         >
                             <Text style={{
                                 color: selectedFilter === item.type ? "#fff" : "#000",
@@ -40,7 +45,7 @@ const styles = StyleSheet.create({
         marginTop: 24,
         flexDirection: "row",
         gap: 12,
-        paddingHorizontal: 16,
+        paddingHorizontal: 0,
         alignItems: "center",
     },
     filterIcon: {

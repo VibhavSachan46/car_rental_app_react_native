@@ -1,8 +1,14 @@
 import { FlatList, TouchableOpacity, Text, View, StyleSheet } from "react-native";
 import React from "react";
 
+
 const NearbyList = ({ places, onSelect }: any) => {
     if (!places || places.length === 0) return null;
+
+    function handleSelect(item: any) {
+        console.log("Selected", item);
+        onSelect(item)
+    }
 
     return (
         <View style={styles.listContainer}>
@@ -11,7 +17,7 @@ const NearbyList = ({ places, onSelect }: any) => {
                 keyExtractor={(item) => item.id}
                 keyboardShouldPersistTaps="handled"
                 renderItem={({ item }) => (
-                    <TouchableOpacity style={styles.item} onPress={() => onSelect(item)}>
+                    <TouchableOpacity style={styles.item} onPress={() => handleSelect(item)}>
                         <Text style={styles.name}>{item.name}</Text>
                         {item.vicinity && <Text style={styles.address}>{item.vicinity}</Text>}
                     </TouchableOpacity>

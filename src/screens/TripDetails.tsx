@@ -55,14 +55,6 @@ const TripDetails = ({ navigation }: any) => {
   }, []);
 
   function handleContinue() {
-
-    // if (pickupDate >= dropDate) {
-    //   Toast.show({
-    //     type: "error",
-    //     text1: "Booking Confirmed",
-    //     text2: "Pickup date cannot be greater than drop date",
-    //   });
-    // }
     dispatch(setPickupDate(pickupDate.toDateString()));
     dispatch(setDropDate(dropDate.toDateString()));
     dispatch(setPickupTime(pickupTime.toTimeString().slice(0, 5)));
@@ -76,9 +68,7 @@ const TripDetails = ({ navigation }: any) => {
       <Text style={styles.title}>Trip Details</Text>
 
       <View style={styles.cardContainer}>
-        {/* DATE SELECTION */}
         <View style={styles.card}>
-          {/* Pickup Date */}
           <View style={styles.section}>
             <Text style={styles.label}>Pickup Date</Text>
 
@@ -101,8 +91,6 @@ const TripDetails = ({ navigation }: any) => {
 
                   if (selected) {
                     setPickupDateState(selected);
-
-                    // Ensure drop date is never before pickup date
                     if (selected > dropDate) setDropDateState(selected);
                   }
                 }}
@@ -110,7 +98,6 @@ const TripDetails = ({ navigation }: any) => {
             )}
           </View>
 
-          {/* Drop Date */}
           <View style={styles.section}>
             <Text style={styles.label}>Drop Date</Text>
 
@@ -124,7 +111,7 @@ const TripDetails = ({ navigation }: any) => {
             {dropDateShow && (
               <DateTimePicker
                 value={dropDate}
-                minimumDate={pickupDate} // cannot pick before pickup date
+                minimumDate={pickupDate}
                 mode="date"
                 display={Platform.OS === "ios" ? "spinner" : "default"}
                 onChange={(event, selected) => {
@@ -138,7 +125,6 @@ const TripDetails = ({ navigation }: any) => {
           </View>
         </View>
 
-        {/* PICKUP TIME */}
         <View style={styles.card}>
           <View style={styles.section}>
             <Text style={styles.label}>Pickup Time</Text>
@@ -168,7 +154,6 @@ const TripDetails = ({ navigation }: any) => {
                   chosen.setHours(selected.getHours());
                   chosen.setMinutes(selected.getMinutes());
 
-                  // Prevent selecting past time if pickup date = today
                   if (pickupDate.toDateString() === now.toDateString()) {
                     if (chosen < now) {
                       Toast.show({
@@ -187,7 +172,6 @@ const TripDetails = ({ navigation }: any) => {
           </View>
         </View>
 
-        {/* USER DETAILS */}
         <View style={styles.card}>
           <Text style={styles.label}>Passenger Details</Text>
 

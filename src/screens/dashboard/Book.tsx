@@ -97,7 +97,7 @@ const Book = ({ navigation }: any) => {
         console.log("MMKV Pickup:", getItem("pickup"));
         console.log("MMKV Drop:", getItem("drop"));
 
-        navigation.navigate("Dates");
+        navigation.navigate("CarSelection");
     }
 
     return (

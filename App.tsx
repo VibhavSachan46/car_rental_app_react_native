@@ -12,6 +12,7 @@ import BookingDetails from './src/screens/BookingDetails'
 import Review from './src/screens/Review'
 import { showUpcomingBookingReminder, cleanupOldReminders } from './src/services/bookingReminder'
 import { AppState, AppStateStatus } from 'react-native'
+import CarSelection from './src/screens/CarSelection'
 
 const Stack = createNativeStackNavigator()
 
@@ -54,6 +55,7 @@ const App = () => {
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="SplashScreen" component={SplashScreen} />
           <Stack.Screen name="DashboardTabs" component={DashboardTabs} />
+          <Stack.Screen name="CarSelection" component={CarSelection} />
           <Stack.Screen name="Dates" component={Dates} />
           <Stack.Screen name="BookingDetails" component={BookingDetails} />
           <Stack.Screen name="Review" component={Review} />

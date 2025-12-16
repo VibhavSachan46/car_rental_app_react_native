@@ -11,9 +11,8 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useDispatch } from "react-redux";
 import {
-  setPickupDate,
-  setDropDate,
-  setPickupTime,
+  setPickupDateTime,
+  setDropDateTime,
   setUserDetails,
 } from "../store/slices/bookingDetails";
 import { getItem } from "../storage/mmkv";
@@ -22,191 +21,215 @@ import Toast from "react-native-toast-message";
 const TripDetails = ({ navigation }: any) => {
   const dispatch = useDispatch();
 
-  const [pickupDate, setPickupDateState] = useState(new Date());
-  const [pickupDateShow, setPickupDateShow] = useState(false);
+  const [pickupDate, setPickupDate] = useState(new Date());
+  const [dropDate, setDropDate] = useState(new Date());
 
-  const [dropDate, setDropDateState] = useState(new Date());
-  const [dropDateShow, setDropDateShow] = useState(false);
+  const [pickupTime, setPickupTime] = useState(getDefaultPickupTime());
 
-  const [pickupTime, setPickupTimeState] = useState(generateDefaultTime());
-  const [pickupTimeShow, setPickupTimeShow] = useState(false);
+  const [showPickupDate, setShowPickupDate] = useState(false);
+  const [showDropDate, setShowDropDate] = useState(false);
+  const [showPickupTime, setShowPickupTime] = useState(false);
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
 
-  function generateDefaultTime() {
+  function getDefaultPickupTime() {
     const now = new Date();
     now.setMinutes(now.getMinutes() + 30);
+    now.setSeconds(0);
+    now.setMilliseconds(0);
     return now;
   }
+
+  const combineDateAndTime = (date: Date, time: Date) => {
+    const combined = new Date(date);
+    combined.setHours(time.getHours());
+    combined.setMinutes(time.getMinutes());
+    combined.setSeconds(0);
+    combined.setMilliseconds(0);
+    return combined;
+  };
 
   useEffect(() => {
     const stored = getItem("bookings");
     if (!stored) return;
 
-    const list = JSON.parse(stored);
-    if (!list.length) return;
+    const bookings = JSON.parse(stored);
+    if (!bookings.length) return;
 
-    const last = list[list.length - 1];
-    setName(last.name || "");
-    setPhone(last.phone || "");
-    setEmail(last.email || "");
+    const last = bookings[bookings.length - 1];
+    setName(last?.user?.name || "");
+    setPhone(last?.user?.phone || "");
+    setEmail(last?.user?.email || "");
   }, []);
 
-  function handleContinue() {
-    dispatch(setPickupDate(pickupDate.toDateString()));
-    dispatch(setDropDate(dropDate.toDateString()));
-    dispatch(setPickupTime(pickupTime.toTimeString().slice(0, 5)));
+  const handleContinue = () => {
+    if (!name.trim() || !phone.trim()) {
+      Toast.show({
+        type: "error",
+        text1: "Missing details",
+        text2: "Name and phone are required",
+      });
+      return;
+    }
+
+    const pickupDateTime = combineDateAndTime(pickupDate, pickupTime);
+    const dropDateTime = combineDateAndTime(dropDate, pickupTime);
+
+    if (dropDateTime <= pickupDateTime) {
+      Toast.show({
+        type: "error",
+        text1: "Invalid dates",
+        text2: "Drop time must be after pickup time",
+      });
+      return;
+    }
+
+    dispatch(setPickupDateTime(pickupDateTime));
+    dispatch(setDropDateTime(dropDateTime));
     dispatch(setUserDetails({ name, phone, email }));
 
     navigation.navigate("Review");
-  }
+  };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <Text style={styles.title}>Trip Details</Text>
 
-      <View style={styles.cardContainer}>
-        <View style={styles.card}>
-          <View style={styles.section}>
-            <Text style={styles.label}>Pickup Date</Text>
+      <View style={styles.card}>
+        <View style={styles.section}>
+          <Text style={styles.label}>Pickup Date</Text>
+          <TouchableOpacity
+            style={styles.dateButton}
+            onPress={() => setShowPickupDate(true)}
+          >
+            <Text style={styles.dateText}>
+              {pickupDate.toDateString()}
+            </Text>
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.dateButton}
-              onPress={() => setPickupDateShow(true)}
-            >
-              <Text style={styles.dateText}>{pickupDate.toDateString()}</Text>
-            </TouchableOpacity>
+          {showPickupDate && (
+            <DateTimePicker
+              value={pickupDate}
+              minimumDate={new Date()}
+              mode="date"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              onChange={(e, selected) => {
+                setShowPickupDate(false);
+                if (e.type === "dismissed" || !selected) return;
 
-            {pickupDateShow && (
-              <DateTimePicker
-                value={pickupDate}
-                minimumDate={new Date()}
-                mode="date"
-                display={Platform.OS === "ios" ? "spinner" : "default"}
-                onChange={(event, selected) => {
-                  setPickupDateShow(false);
-                  if (event.type === "dismissed") return;
-
-                  if (selected) {
-                    setPickupDateState(selected);
-                    if (selected > dropDate) setDropDateState(selected);
-                  }
-                }}
-              />
-            )}
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.label}>Drop Date</Text>
-
-            <TouchableOpacity
-              style={styles.dateButton}
-              onPress={() => setDropDateShow(true)}
-            >
-              <Text style={styles.dateText}>{dropDate.toDateString()}</Text>
-            </TouchableOpacity>
-
-            {dropDateShow && (
-              <DateTimePicker
-                value={dropDate}
-                minimumDate={pickupDate}
-                mode="date"
-                display={Platform.OS === "ios" ? "spinner" : "default"}
-                onChange={(event, selected) => {
-                  setDropDateShow(false);
-                  if (event.type === "dismissed") return;
-
-                  if (selected) setDropDateState(selected);
-                }}
-              />
-            )}
-          </View>
+                setPickupDate(selected);
+                if (selected > dropDate) setDropDate(selected);
+              }}
+            />
+          )}
         </View>
 
-        <View style={styles.card}>
-          <View style={styles.section}>
-            <Text style={styles.label}>Pickup Time</Text>
+        <View style={styles.section}>
+          <Text style={styles.label}>Drop Date</Text>
+          <TouchableOpacity
+            style={styles.dateButton}
+            onPress={() => setShowDropDate(true)}
+          >
+            <Text style={styles.dateText}>
+              {dropDate.toDateString()}
+            </Text>
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.dateButton}
-              onPress={() => setPickupTimeShow(true)}
-            >
-              <Text style={styles.dateText}>
-                {pickupTime.toTimeString().slice(0, 5)}
-              </Text>
-            </TouchableOpacity>
-
-            {pickupTimeShow && (
-              <DateTimePicker
-                value={pickupTime}
-                mode="time"
-                is24Hour={true}
-                display={Platform.OS === "ios" ? "spinner" : "default"}
-                onChange={(event, selected) => {
-                  setPickupTimeShow(false);
-                  if (event.type === "dismissed") return;
-                  if (!selected) return;
-
-                  const now = new Date();
-                  const chosen = new Date(pickupDate);
-                  chosen.setHours(selected.getHours());
-                  chosen.setMinutes(selected.getMinutes());
-
-                  if (pickupDate.toDateString() === now.toDateString()) {
-                    if (chosen < now) {
-                      Toast.show({
-                        type: "error",
-                        text1: "Booking Confirmed",
-                        text2: "Pickup date cannot be greater than drop date",
-                      });
-                      return;
-                    }
-                  }
-
-                  setPickupTimeState(selected);
-                }}
-              />
-            )}
-          </View>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.label}>Passenger Details</Text>
-
-          <TextInput
-            placeholder="Full Name"
-            placeholderTextColor="#999"
-            style={styles.input}
-            value={name}
-            onChangeText={setName}
-          />
-
-          <TextInput
-            placeholder="Phone Number"
-            placeholderTextColor="#999"
-            keyboardType="phone-pad"
-            style={styles.input}
-            value={phone}
-            onChangeText={setPhone}
-          />
-
-          <TextInput
-            placeholder="Email"
-            placeholderTextColor="#999"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-          />
+          {showDropDate && (
+            <DateTimePicker
+              value={dropDate}
+              minimumDate={pickupDate}
+              mode="date"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              onChange={(e, selected) => {
+                setShowDropDate(false);
+                if (e.type === "dismissed" || !selected) return;
+                setDropDate(selected);
+              }}
+            />
+          )}
         </View>
       </View>
 
-      {/* SUBMIT */}
+      <View style={styles.card}>
+        <View style={styles.section}>
+          <Text style={styles.label}>Pickup Time</Text>
+          <TouchableOpacity
+            style={styles.dateButton}
+            onPress={() => setShowPickupTime(true)}
+          >
+            <Text style={styles.dateText}>
+              {pickupTime.toTimeString().slice(0, 5)}
+            </Text>
+          </TouchableOpacity>
+
+          {showPickupTime && (
+            <DateTimePicker
+              value={pickupTime}
+              mode="time"
+              is24Hour
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              onChange={(e, selected) => {
+                setShowPickupTime(false);
+                if (e.type === "dismissed" || !selected) return;
+
+                const now = new Date();
+                const chosen = combineDateAndTime(pickupDate, selected);
+
+                if (
+                  pickupDate.toDateString() === now.toDateString() &&
+                  chosen < now
+                ) {
+                  Toast.show({
+                    type: "error",
+                    text1: "Invalid time",
+                    text2: "Pickup time must be in the future",
+                  });
+                  return;
+                }
+
+                setPickupTime(selected);
+              }}
+            />
+          )}
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.label}>Passenger Details</Text>
+
+        <TextInput
+          placeholder="Full Name"
+          style={styles.input}
+          value={name}
+          onChangeText={setName}
+        />
+
+        <TextInput
+          placeholder="Phone Number"
+          keyboardType="phone-pad"
+          style={styles.input}
+          value={phone}
+          onChangeText={setPhone}
+        />
+
+        <TextInput
+          placeholder="Email (optional)"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          style={styles.input}
+          value={email}
+          onChangeText={setEmail}
+        />
+      </View>
+
       <View style={styles.bottomContainer}>
-        <TouchableOpacity style={styles.continueBtn} onPress={handleContinue}>
+        <TouchableOpacity
+          style={styles.continueBtn}
+          onPress={handleContinue}
+        >
           <Text style={styles.continueText}>Review Booking</Text>
         </TouchableOpacity>
       </View>
@@ -215,6 +238,7 @@ const TripDetails = ({ navigation }: any) => {
 };
 
 export default TripDetails;
+
 
 const styles = StyleSheet.create({
   container: {

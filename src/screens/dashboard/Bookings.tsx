@@ -125,7 +125,7 @@ const Bookings = ({ navigation }: any) => {
 
                 <View style={styles.cardContent}>
                     <View style={styles.cardHeader}>
-                        <Text style={styles.bookingId}>Booking #{item.id}</Text>
+                        <Text style={styles.bookingId}>#{item.id}</Text>
 
                         <View
                             style={[

@@ -1,15 +1,22 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-    pickupDate: null,
-    dropDate: null,
     pickupLocation: null,
     dropLocation: null,
-    pickupTime: null,
+    pickupDateTime: null,
+    dropDateTime: null,
     userDetails: {
         name: "",
         phone: "",
         email: "",
+    },
+    carDetails: {
+        category: "",
+        pricePerDay: 0,
+    },
+    pricing: {
+        rentalDays: 0,
+        totalAmount: 0,
     },
 };
 
@@ -17,45 +24,52 @@ const bookingSlice = createSlice({
     name: "booking",
     initialState,
     reducers: {
-        setPickupDate: (state, action) => {
-            state.pickupDate = action.payload;
-        },
-        setDropDate: (state, action) => {
-            state.dropDate = action.payload;
-        },
+        // Locations
         setPickupLocation: (state, action) => {
             state.pickupLocation = action.payload;
         },
         setDropLocation: (state, action) => {
             state.dropLocation = action.payload;
         },
+
+        // Date & time
+        setPickupDateTime: (state, action) => {
+            state.pickupDateTime = action.payload;
+        },
+        setDropDateTime: (state, action) => {
+            state.dropDateTime = action.payload;
+        },
+
+        // Car
+        setCarDetails: (state, action) => {
+            state.carDetails = action.payload;
+        },
+
+        // User
         setUserDetails: (state, action) => {
-            state.userDetails = { ...state.userDetails, ...action.payload };
-        },
-        setPickupTime: (state, action) => {
-            state.pickupTime = action.payload;
-        },
-        resetBooking: (state) => {
-            state.pickupDate = null;
-            state.dropDate = null;
-            state.pickupLocation = null;
-            state.dropLocation = null;
             state.userDetails = {
-                name: "",
-                phone: "",
-                email: "",
+                ...state.userDetails,
+                ...action.payload,
             };
         },
+
+        setPricing: (state, action) => {
+            state.pricing = action.payload;
+        },
+
+        resetBooking: () => initialState,
     },
 });
 
 export const {
-    setPickupDate,
-    setDropDate,
     setPickupLocation,
     setDropLocation,
-    setPickupTime,
-    setUserDetails, resetBooking
+    setPickupDateTime,
+    setDropDateTime,
+    setCarDetails,
+    setUserDetails,
+    setPricing,
+    resetBooking,
 } = bookingSlice.actions;
 
 export default bookingSlice.reducer;
